@@ -15,6 +15,13 @@ def get_data():
     return pd.read_csv('./data/train.csv').drop('Unnamed: 0', axis=1)
 
 
+def get_corr_matrix(df):
+    f, ax = plt.subplots(figsize=[20, 15])
+    sns.heatmap(df.corr(), annot=True, fmt=".2f", ax=ax, cmap="magma")
+    ax.set_title("Correlation Matrix", fontsize=20)
+    plt.show()
+
+
 def age_engineering(df):
     # ERGEN ERKEK - KADIN 0-17
     df.loc[(df["Age"] <= 17) & (df["Gender"] == "Male"),
@@ -39,7 +46,20 @@ def age_engineering(df):
     return df
 
 
-def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
+def customer_value_engineering(df):
+    df.loc[:, 'New_Value'] = 'Normal'
+    df.loc[((df['Customer Type'] == 'Loyal Customer') | (df['Customer Type'] == 'disloyal Customer')) & ((df['Type of Travel'] == 'Business Travel') | (
+        df['Type of Travel'] == 'Personal Travel')) & (df['Class'] == 'Business') & (df['satisfaction'] == 'satisfied'), 'New_Value'] = 'Most Valuable'
+    df.loc[(df['Customer Type'] == 'Loyal Customer') & ((df['Type of Travel'] == 'Business Travel') | (df['Type of Travel']
+                                                                                                       == 'Personal Travel')) & (df['Class'] == 'Eco Plus') & (df['satisfaction'] == 'satisfied'), 'New_Value'] = 'Valuable'
+    df.loc[((df['Customer Type'] == 'Loyal Customer') | (df['Customer Type'] == 'disloyal Customer')) & ((df['Type of Travel'] == 'Business Travel') | (
+        df['Type of Travel'] == 'Personal Travel')) & (df['Class'] == 'Eco Plus') & (df['satisfaction'] == 'satisfied'), 'New_Value'] = 'Average Valuable'
+    df.loc[(df['Departure Delay in Minutes'] > df['Departure Delay in Minutes'].mean()) & (df['Arrival Delay in Minutes'] > df['Arrival Delay in Minutes'].mean()) & (
+        df['Flight Distance'] > df['Flight Distance'].mean()) & (df['satisfaction'] == 'satisfied'), 'New_Value'] = 'Best Valuable'
+    return df
+
+
+def asel_mebaysan_preprocess(na='drop', fix_outlier=True):
     df = get_data()
     cat_cols, num_cols, cat_but_car = grab_col_names(df)
     num_cols = [col for col in num_cols if col not in "id"]
@@ -48,8 +68,9 @@ def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
     #################################
     if na == 'drop':
         df = df.dropna()
-    elif na=='group':
-        df["Arrival Delay in Minutes"].fillna(df.groupby(['Type of Travel','satisfaction'])["Arrival Delay in Minutes"].transform("mean"), inplace=True)
+    elif na == 'group':
+        df["Arrival Delay in Minutes"].fillna(df.groupby(['Customer Type', 'Type of Travel', 'Class', 'satisfaction'])[
+                                              "Arrival Delay in Minutes"].transform("mean"), inplace=True)
     elif na == 'knn':
         dff = pd.get_dummies(df[cat_cols + num_cols], drop_first=True)
         scaler = MinMaxScaler()
@@ -59,7 +80,6 @@ def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
         dff = pd.DataFrame(scaler.inverse_transform(dff), columns=dff.columns)
         df["Arrival Delay in Minutes"] = dff[["Arrival Delay in Minutes"]]
 
-
     #################################
     #### * Outliers ####
     #################################
@@ -68,9 +88,9 @@ def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
             q1 = 0.05
             q3 = 0.95
             if check_outlier(df, num, q1, q3):
-            # sns.boxplot(x=f'{num}',data=df, whis=[0.05, 0.95])
-            # plt.show()
-            # grab_outliers(df,num,True,0.05,0.95)
+                # sns.boxplot(x=f'{num}',data=df, whis=[0.05, 0.95])
+                # plt.show()
+                # grab_outliers(df,num,True,0.05,0.95)
                 # df[num].describe([0.10, 0.20, 0.30, 0.40, 0.50,
                 #              0.60, 0.70, 0.80, 0.90, 0.95, 0.99])
                 replace_with_thresholds(df, num, q1, q3)
@@ -78,11 +98,11 @@ def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
     else:
         pass
 
-    
     #################################
     #### * Feature Engineering ####
     #################################
     df = age_engineering(df)
+    df = customer_value_engineering(df)
     cat_cols, num_cols, cat_but_car = grab_col_names(df)
     num_cols = [col for col in num_cols if col not in "id"]
     df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
@@ -91,7 +111,11 @@ def asel_mebaysan_preprocess(na='drop',fix_outlier=True):
 
 df = get_data()
 cat_cols, num_cols, cat_but_car = grab_col_names(df)
+df.head()
+
+df[['Customer Type', 'Type of Travel', 'Class', 'satisfaction']]
 
 
-df = asel_mebaysan_preprocess(na='knn')
+customer_value_engineering(df)
 
+df = asel_mebaysan_preprocess(na='group')
