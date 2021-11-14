@@ -23,7 +23,7 @@ def check_df(dataframe, head=5):
     print("##################### Quantiles #####################")
     print(dataframe.quantile([0, 0.05, 0.50, 0.95, 0.99, 1]).T)
 
-def grab_col_names(dataframe, cat_th=10, car_th=20):
+def grab_col_names(dataframe, cat_th=10, car_th=20, printable = False):
     """
 
     Veri setindeki kategorik, numerik ve kategorik fakat kardinal değişkenlerin isimlerini verir.
@@ -75,13 +75,13 @@ def grab_col_names(dataframe, cat_th=10, car_th=20):
     # num_cols
     num_cols = [col for col in dataframe.columns if dataframe[col].dtypes != "O"]
     num_cols = [col for col in num_cols if col not in num_but_cat]
-
-    print(f"Observations: {dataframe.shape[0]}")
-    print(f"Variables: {dataframe.shape[1]}")
-    print(f'cat_cols: {len(cat_cols)}')
-    print(f'num_cols: {len(num_cols)}')
-    print(f'cat_but_car: {len(cat_but_car)}')
-    print(f'num_but_cat: {len(num_but_cat)}')
+    if printable:
+        print(f"Observations: {dataframe.shape[0]}")
+        print(f"Variables: {dataframe.shape[1]}")
+        print(f'cat_cols: {len(cat_cols)}')
+        print(f'num_cols: {len(num_cols)}')
+        print(f'cat_but_car: {len(cat_but_car)}')
+        print(f'num_but_cat: {len(num_but_cat)}')
     return cat_cols, num_cols, cat_but_car
 
 def num_summary(dataframe, numerical_col, plot=False):

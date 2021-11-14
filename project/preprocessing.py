@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
-from helpers.eda import grab_col_names, check_df, high_correlated_cols, cat_summary, num_summary
-from helpers.data_prep import outlier_thresholds, remove_outlier, check_outlier, grab_outliers, replace_with_thresholds, missing_values_table, missing_vs_target
+from helpers.eda import grab_col_names
+from helpers.data_prep import check_outlier, replace_with_thresholds
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.impute import KNNImputer
@@ -12,7 +11,8 @@ pd.set_option('display.max_columns', None)
 
 
 def get_data():
-    return pd.read_csv('./data/train.csv').drop('Unnamed: 0', axis=1)
+    return pd.read_csv('./data/train.csv').drop(['Unnamed: 0','id'], axis=1)
+
 
 
 def get_corr_matrix(df):
@@ -59,9 +59,8 @@ def customer_value_engineering(df):
     return df
 
 
-def asel_mebaysan_preprocess(na='drop', fix_outlier=True):
-    df = get_data()
-    cat_cols, num_cols, cat_but_car = grab_col_names(df)
+def asel_mebaysan_preprocess(df, na='drop', fix_outlier=True):
+    cat_cols, num_cols, cat_but_car = grab_col_names(df,cat_th=5)
     num_cols = [col for col in num_cols if col not in "id"]
     #################################
     #### * Missing Values ####
@@ -103,19 +102,7 @@ def asel_mebaysan_preprocess(na='drop', fix_outlier=True):
     #################################
     df = age_engineering(df)
     df = customer_value_engineering(df)
-    cat_cols, num_cols, cat_but_car = grab_col_names(df)
+    cat_cols, num_cols, cat_but_car = grab_col_names(df, cat_th=5)
     num_cols = [col for col in num_cols if col not in "id"]
     df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
     return df
-
-
-df = get_data()
-cat_cols, num_cols, cat_but_car = grab_col_names(df)
-df.head()
-
-df[['Customer Type', 'Type of Travel', 'Class', 'satisfaction']]
-
-
-customer_value_engineering(df)
-
-df = asel_mebaysan_preprocess(na='group')
